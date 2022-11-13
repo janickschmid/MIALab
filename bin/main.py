@@ -26,6 +26,8 @@ except ImportError:
     import mialab.utilities.file_access_utilities as futil
     import mialab.utilities.pipeline_utilities as putil
 
+RANDOM_STATE = np.random.RandomState(np.random.MT19937(np.random.SeedSequence(415673835)))
+
 LOADING_KEYS = [structure.BrainImageTypes.T1w,
                 structure.BrainImageTypes.T2w,
                 structure.BrainImageTypes.GroundTruth,
@@ -72,10 +74,10 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
     data_train = np.concatenate([img.feature_matrix[0] for img in images])
     labels_train = np.concatenate([img.feature_matrix[1] for img in images]).squeeze()
 
-    warnings.warn('Random forest parameters not properly set.')
     forest = sk_ensemble.RandomForestClassifier(max_features=images[0].feature_matrix[0].shape[1],
-                                                n_estimators=1,
-                                                max_depth=5)
+                                                n_estimators=10,
+                                                max_depth=10,
+                                                random_state=RANDOM_STATE)
 
     start_time = timeit.default_timer()
     forest.fit(data_train, labels_train)
