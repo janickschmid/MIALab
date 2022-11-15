@@ -9,6 +9,20 @@ import SimpleITK as sitk
 import numpy as np
 
 
+def image_histogram_equalization(image, number_bins=256):
+    # from http://www.janeriksolem.net/histogram-equalization-with-python-and.html
+
+    # get image histogram
+    image_histogram, bins = np.histogram(image.flatten(), number_bins, density=True)
+    cdf = image_histogram.cumsum() # cumulative distribution function
+    cdf = (number_bins-1) * cdf / cdf[-1] # normalize
+
+    # use linear interpolation of cdf to find new pixel values
+    image_equalized = np.interp(image.flatten(), bins[:-1], cdf)
+
+    return image_equalized.reshape(image.shape), cdf
+
+
 class ImageNormalization(pymia_fltr.Filter):
     """Represents a normalization filter."""
 
@@ -30,11 +44,30 @@ class ImageNormalization(pymia_fltr.Filter):
         img_arr = sitk.GetArrayFromImage(image)
 
         # todo: normalize the image using numpy
-        img_arr = (img_arr - np.mean(img_arr) ) / np.std(img_arr)
-        #warnings.warn('No normalization implemented. Returning unprocessed image.')
+        warnings.warn('No normalization implemented. Returning unprocessed image.')
+        
+        #z-Score:
+        img_out = img_arr        
+        mue = np.mean(img_out)
+        sigma = np.std(img_out)
+        img_Z = (img_out-mue)/sigma
+        
+        # hist euqalizationn
+        sample = img_arr
+        #histogramm equalization
+        hist,bins = np.histogram(sample,256,[0,256])
+        cdf = hist.cumsum()
+        cdf_normalized = cdf * float(hist.max()) / cdf.max()
 
-        img_out = sitk.GetImageFromArray(img_arr)
-        img_out.CopyInformation(image)
+        cdf_m = np.ma.masked_equal(cdf,0)
+        cdf_m = (cdf_m - cdf_m.min())*255/(cdf_m.max()-cdf_m.min())
+        cdf = np.ma.filled(cdf_m,0).astype('uint8')
+
+        sample_temp = sample.astype('uint8')
+        sample_hist, cdf = image_histogram_equalization(sample)
+        
+
+        
 
         return img_out
 
@@ -77,8 +110,13 @@ class SkullStripping(pymia_fltr.Filter):
         Returns:
             sitk.Image: The normalized image.
         """
-        image = sitk.Mask(image, params.img_mask)
-        #warnings.warn('No skull-stripping implemented. Returning unprocessed image.')
+        mask = params.img_mask  # the brain mask
+
+        # todo: remove the skull from the image by using the brain mask
+        warnings.warn('No skull-stripping implemented. Returning unprocessed image.')
+
+        image = sitk.Mask(image,mask,0,1) 
+        
 
         return image
 
@@ -128,15 +166,15 @@ class ImageRegistration(pymia_fltr.Filter):
 
         # todo: replace this filter by a registration. Registration can be costly, therefore, we provide you the
         # transformation, which you only need to apply to the image!
-        #warnings.warn('No registration implemented. Returning unregistered image')
+        warnings.warn('No registration implemented. Returning unregistered image')
 
         atlas = params.atlas
         transform = params.transformation
         is_ground_truth = params.is_ground_truth  # the ground truth will be handled slightly different
-        if is_ground_truth:
-            image = sitk.Resample(image, atlas, transform, sitk.sitkNearestNeighbor, 0.0, image.GetPixelIDValue())
-        else:
-            image = sitk.Resample(image, atlas, transform, sitk.sitkLinear, 0.0, image.GetPixelIDValue())
+        
+        image = sitk.Resample(image, image,transform)
+        
+        
 
         # note: if you are interested in registration, and want to test it, have a look at
         # pymia.filtering.registration.MultiModalRegistration. Think about the type of registration, i.e.
