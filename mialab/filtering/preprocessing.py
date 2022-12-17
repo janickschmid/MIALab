@@ -66,12 +66,19 @@ class ImageNormalization(pymia_fltr.Filter):
         cdf = np.ma.filled(cdf_m,0).astype('uint8')
 
         sample_temp = sample.astype('uint8')
-        img_arr, cdf = image_histogram_equalization(sample)
- 
-
-
-        img_out = sitk.GetImageFromArray(img_arr)
+        sample_hist, cdf = image_histogram_equalization(sample)
+        
+        img_out = sitk.GetImageFromArray(sample_hist)
         img_out.CopyInformation(image)
+        
+        
+        sample_minmax_2 = (sample-np.min(sample))/(np.max(sample)-np.min(sample))
+        
+    
+        c = 255 / np.log(1 + np.max(img_arr))
+        sample_log = c * (np.log(img_arr + 1))
+        
+        img_out = sitk.GetImageFromArray(sample_log)
 
         return img_out
 

@@ -50,3 +50,20 @@ cdf = np.ma.filled(cdf_m,0).astype('uint8')
 
 sample_temp = sample.astype('uint8')
 sample_hist, cdf = image_histogram_equalization(sample)
+
+
+#min-max normalization
+from sklearn.preprocessing import MinMaxScaler
+
+scaler = MinMaxScaler()
+
+sample_minmax_1 = scaler.fit_transform(sample) #scheisse?
+
+
+sample_minmax_2 = (sample-np.min(sample))/(np.max(sample)-np.min(sample))
+
+
+#logscale normalization
+
+c = 255 / np.log(1 + np.max(image))
+log_image = c * (np.log(image + 1))
