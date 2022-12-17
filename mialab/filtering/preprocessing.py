@@ -8,21 +8,7 @@ import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
 import numpy as np
 
-def image_histogram_equalization(image, number_bins=256):
-    # from http://www.janeriksolem.net/histogram-equalization-with-python-and.html
-
-    # get image histogram
-    image_histogram, bins = np.histogram(image.flatten(), number_bins, density=True)
-    cdf = image_histogram.cumsum() # cumulative distribution function
-    cdf = (number_bins-1) * cdf / cdf[-1] # normalize
-
-    # use linear interpolation of cdf to find new pixel values
-    image_equalized = np.interp(image.flatten(), bins[:-1], cdf)
-
-    return image_equalized.reshape(image.shape), cdf
-
-
-
+import mialab.filtering.normalization_methods as norm_method
 
 class ImageNormalization(pymia_fltr.Filter):
     """Represents a normalization filter."""
@@ -41,44 +27,24 @@ class ImageNormalization(pymia_fltr.Filter):
         Returns:
             sitk.Image: The normalized image.
         """
-
         img_arr = sitk.GetArrayFromImage(image)
 
-        # todo: normalize the image using numpy
-        #img_arr = (img_arr - np.mean(img_arr) ) / np.std(img_arr)
-        #warnings.warn('No normalization implemented. Returning unprocessed image.')
+        #no_normalization
+        #img_out = norm_method.no_normalization(img_arr)     
 
-                #z-Score:
-        img_out = img_arr        
-        mue = np.mean(img_out)
-        sigma = np.std(img_out)
-        img_Z = (img_out-mue)/sigma
+        #z-Score:   
+        #img_out = norm_method.z_score_normalization(img_arr)
         
         # hist euqalizationn
-        sample = img_arr
-        #histogramm equalization
-        hist,bins = np.histogram(sample,256,[0,256])
-        cdf = hist.cumsum()
-        cdf_normalized = cdf * float(hist.max()) / cdf.max()
+        #img_out = norm_method.histogram_equalization(img_arr)
+        
+        #min max norm
+        #img_out = norm_method.min_max_normalization(img_arr)
 
-        cdf_m = np.ma.masked_equal(cdf,0)
-        cdf_m = (cdf_m - cdf_m.min())*255/(cdf_m.max()-cdf_m.min())
-        cdf = np.ma.filled(cdf_m,0).astype('uint8')
-
-        sample_temp = sample.astype('uint8')
-        sample_hist, cdf = image_histogram_equalization(sample)
+        #log norm
+        img_out = norm_method.log_normalization(img_arr)        
         
-        img_out = sitk.GetImageFromArray(sample_hist)
-        img_out.CopyInformation(image)
-        
-        
-        sample_minmax_2 = (sample-np.min(sample))/(np.max(sample)-np.min(sample))
-        
-    
-        c = 255 / np.log(1 + np.max(img_arr))
-        sample_log = c * (np.log(img_arr + 1))
-        
-        img_out = sitk.GetImageFromArray(sample_log)
+        img_out = sitk.GetImageFromArray(img_out)
 
         return img_out
 
