@@ -8,6 +8,7 @@ import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
 import numpy as np
 
+import mialab.filtering.normalization_methods as norm_method
 
 class ImageNormalization(pymia_fltr.Filter):
     """Represents a normalization filter."""
@@ -26,15 +27,24 @@ class ImageNormalization(pymia_fltr.Filter):
         Returns:
             sitk.Image: The normalized image.
         """
-
         img_arr = sitk.GetArrayFromImage(image)
 
-        # todo: normalize the image using numpy
-        img_arr = (img_arr - np.mean(img_arr) ) / np.std(img_arr)
-        #warnings.warn('No normalization implemented. Returning unprocessed image.')
+        #no_normalization
+        #img_out = norm_method.no_normalization(img_arr)     
 
-        img_out = sitk.GetImageFromArray(img_arr)
-        img_out.CopyInformation(image)
+        #z-Score:   
+        #img_out = norm_method.z_score_normalization(img_arr)
+        
+        # hist euqalizationn
+        #img_out = norm_method.histogram_equalization(img_arr)
+        
+        #min max norm
+        #img_out = norm_method.min_max_normalization(img_arr)
+
+        #log norm
+        img_out = norm_method.log_normalization(img_arr)        
+        
+        img_out = sitk.GetImageFromArray(img_out)
 
         return img_out
 
